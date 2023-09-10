@@ -3,6 +3,7 @@ from tkinter import ttk
 from ttkthemes import ThemedStyle
 from tkinter import filedialog
 from tkinter import messagebox
+from tkinter import colorchooser
 from tkcalendar import *
 import datetime
 import pickle
@@ -16,9 +17,9 @@ indice=ttk.Notebook(root)
 indice.grid(row=0, column=0, sticky="nswe")
 
 
-miframe=Frame(indice)
-framecalendario=Frame(indice)
-configframe=Frame(indice)
+miframe=ttk.Frame(indice, style="TFrame")
+framecalendario=ttk.Frame(indice, style="TFrame")
+configframe=ttk.Frame(indice, style="TFrame")
 
 
 indice.add(miframe, text="Notas")
@@ -43,11 +44,21 @@ finally:
     eventospermanentes.close()
     
     
-cal=Calendar(framecalendario, font=("IBM Plex sans", 12), selectmode="day", locale="es_ES", selectbackground="red")
+cal=Calendar(framecalendario, font=("IBM Plex sans", 12), selectmode="day", locale="es_ES", 
+             selectbackground="red", showothermonthdays=False, showweeknumbers=False)
 cal.grid(row=0, column=0, sticky="nsew")
     
-for fecha, texto, etiqueta in eventos:
-    cal.calevent_create(fecha, texto, etiqueta)
+def cargarcalendario():
+    for fecha, texto, etiqueta in eventos:
+        cal.calevent_create(fecha, texto, etiqueta)
+             
+def on_tab_changed(event):
+    # Obtén el índice de la pestaña seleccionada
+    cargarcalendario()
+
+# Enlaza la función al evento <<NotebookTabChanged>>
+indice.bind("<<NotebookTabChanged>>", on_tab_changed)
+
 
 def guardar():
     if areadetexto.get(0.0, "end-1c")!="":
@@ -187,64 +198,94 @@ def subrayadotag(subrayado):
     
 #-------------------------------------------etiquetas-----------------
 #-------------------------------------------tipografia-----------------
-            
+
 def tipografia():
-    miframetipo=Frame(miframe, width=50, relief="groove")
+    
+    miframetipo=ttk.Frame(miframe, width=50, relief="groove", style="TFrame")
     miframetipo.grid(row=0, rowspan=7, column=0, sticky="nsew")
     
     
     #------------------------------------------------
     
-    colorlabel=LabelFrame(miframetipo, text="Color", labelanchor="n")
-    colorlabel.grid(row=0, column=0, sticky="nsew")
+    colorlabel=ttk.LabelFrame(miframetipo, style="TLabelframe", text="Color", labelanchor="n")
+    colorlabel.grid(row=0, column=0, sticky="nsew", pady=3, padx=2)
     
-    botonrojo=Button(colorlabel, text="Rojo", command=lambda: colortag("red"), foreground="red")
-    botonrojo.grid(row=0, column=0, sticky="nsew")
+    colordetextos=StringVar
+    def aplicarcolor():
+        try:
+            global colordetextos
+            colortag(colordetextos)
+        except:
+            pass
+
+    def cambiarcolor():
+        global colordetextos
+        elecciondecolor=colorchooser.askcolor("red")
+        if elecciondecolor[1]:
+            colordetextos=elecciondecolor[1]
+            colortag(elecciondecolor[1])
+            estilodeaplicarboton=ttk.Style()
+            estilodeaplicarboton.configure("botoncolor.TButton", background=elecciondecolor[1], foreground=elecciondecolor[1], font=("IBM Plex Mono", 11, "normal bold"))
+            aplicarcolorboton.config(style="botoncolor.TButton")
     
-    botonazul=Button(colorlabel, text="Azul", command=lambda: colortag("blue"), foreground="blue")
-    botonazul.grid(row=1, column=0, sticky="nsew")
     
-    botonverde=Button(colorlabel, text="Verde", command=lambda: colortag("green"), foreground="green")
-    botonverde.grid(row=2, column=0, sticky="nsew")
+    aplicarcolorboton=ttk.Button(colorlabel, text="Color", width=6, style="TButton", command=lambda : aplicarcolor())
+    aplicarcolorboton.grid(row=0, column=0, sticky="ew")
+    aplicarcolorboton.config(takefocus=False)
     
-    botonnegro=Button(colorlabel, text="Negro", command=lambda: colortag("black"), foreground="black")
-    botonnegro.grid(row=3, column=0, sticky="nsew")
+    elegircolorboton=ttk.Button(colorlabel, text="↓", width=1, style="TButton", command=lambda : cambiarcolor())
+    elegircolorboton.grid(row=0, column=1, sticky="ew")
+    elegircolorboton.config(takefocus=False)
     
     #------------------------------------------------
     
-    estilolabel=LabelFrame(miframetipo, text="Estilo", labelanchor="n")
-    estilolabel.grid(row=1, column=0, sticky="nsew")
+    estilolabel=ttk.LabelFrame(miframetipo, style="TLabelframe", text="Estilo", labelanchor="n")
+    estilolabel.grid(row=1, column=0, sticky="nsew", pady=3, padx=2)
     
-    botonregular=Button(estilolabel, text="Regular", command=lambda: estilotag("normal"), foreground="black", font=("IBM Plex Mono", 9, "normal"))
-    botonregular.grid(row=0, column=0, sticky="nsew")
+    listadeestilos=["normal", "italic", "bold", "bold italic"]
+    estilocombobox=ttk.Combobox(estilolabel, style="TCombobox", values=listadeestilos, width=11, justify="center")
+    estilocombobox.grid(row=0, column=0, sticky="sew", padx=2)
+    estilocombobox.set("normal")
+    estilocombobox.config(state="readonly", takefocus=False, exportselection=False)
     
-    botonitalica=Button(estilolabel, text="Italica", command=lambda: estilotag("italic"), foreground="black", font=("IBM Plex Mono", 9, "italic"))
-    botonitalica.grid(row=1, column=0, sticky="nsew")
-    
-    botonbold=Button(estilolabel, text="Negrita", command=lambda: estilotag("bold"), foreground="black", font=("IBM Plex Mono", 9, "bold"))
-    botonbold.grid(row=2, column=0, sticky="nsew")
-    
-    botonbolditalic=Button(estilolabel, text="Negrita\nItalica", command=lambda: estilotag("bold italic"), foreground="black", font=("IBM Plex Mono", 9, "bold italic"), justify="center")
-    botonbolditalic.grid(row=3, column=0, sticky="nsew")
+    estiloboton=ttk.Button(estilolabel, text="Aplicar", style="TButton", command=lambda : estilotag(estilocombobox.get()))
+    estiloboton.grid(row=1, column=0, sticky="new", padx=2)
+    estiloboton.config(takefocus=False)
 
     #------------------------------------------------
     
-    marcadorlabel=LabelFrame(miframetipo, text="Subrayar", labelanchor="n")
-    marcadorlabel.grid(row=2, column=0, sticky="nsew")
+    marcadorlabel=ttk.LabelFrame(miframetipo, style="TLabelframe", text="Subrayar", labelanchor="n")
+    marcadorlabel.grid(row=2, column=0, sticky="nsew", pady=3, padx=2)
     
-    botonmarcadormagenta=Button(marcadorlabel, text="Magenta", command=lambda: subrayadotag("magenta"), background="magenta")
-    botonmarcadormagenta.grid(row=0, column=0, sticky="nsew")
+    marcadordetextos=StringVar
+    def aplicarmarcador():
+        try:
+            global marcadordetextos
+            subrayadotag(marcadordetextos)
+        except:
+            pass
+
+    def cambiarmarcador():
+        global marcadordetextos
+        elecciondemarcador=colorchooser.askcolor("yellow")
+        if elecciondemarcador[1]:
+            marcadordetextos=elecciondemarcador[1]
+            subrayadotag(elecciondemarcador[1])
+            estilodeaplicarmarcadorboton=ttk.Style()
+            estilodeaplicarmarcadorboton.configure("botonmarcador.TButton", background=elecciondemarcador[1], foreground=elecciondemarcador[1], font=("IBM Plex Mono", 11, "normal bold"))
+            aplicarmarcadorboton.config(style="botonmarcador.TButton")
     
-    botonmarcadorcyan=Button(marcadorlabel, text="Cyan", command=lambda: subrayadotag("cyan"), background="cyan")
-    botonmarcadorcyan.grid(row=1, column=0, sticky="nsew")
     
-    botonmarcadoramarillo=Button(marcadorlabel, text="Amarillo", command=lambda: subrayadotag("yellow"), background="yellow")
-    botonmarcadoramarillo.grid(row=2, column=0, sticky="nsew")
+    aplicarmarcadorboton=ttk.Button(marcadorlabel, text="Color", width=6, style="TButton", command=lambda : aplicarmarcador())
+    aplicarmarcadorboton.grid(row=0, column=0, sticky="ew")
+    aplicarmarcadorboton.config(takefocus=False)
     
-    botonmarcadorborrar=Button(marcadorlabel, text="Borrar\nSubrayado", command=lambda: subrayadotag("white"), background="white")
-    botonmarcadorborrar.grid(row=3, column=0, sticky="nsew")
+    elegirmarcadorboton=ttk.Button(marcadorlabel, text="↓", width=1, style="TButton", command=lambda : cambiarmarcador())
+    elegirmarcadorboton.grid(row=0, column=1, sticky="ew")
+    elegirmarcadorboton.config(takefocus=False)
     
     #------------------------------------------------
+    
     
     estilolabel.columnconfigure(0, weight=1)
     estilolabel.rowconfigure(0, weight=1)
@@ -274,14 +315,14 @@ def tipografia():
 
 #---------------------Panel Superior----------------------------------
 
-fechalabel=Label(miframe, text="Fecha:")
-fechalabel.grid(row=0, column=1, sticky="ew")
+fechalabel=ttk.Label(miframe, text="Fecha:", style="TLabel")
+fechalabel.grid(row=0, column=1, sticky="nsew", padx=5)
 
 fechadateentry=DateEntry(miframe, locale="es_ES")
-fechadateentry.grid(row=0, column=2, sticky="ew")
+fechadateentry.grid(row=0, column=2, sticky="nsew")
 
-horalabel=Label(miframe, text="Hora:")
-horalabel.grid(row=0, column=3, sticky="ew")
+horalabel=ttk.Label(miframe, text="Hora:", style="TLabel")
+horalabel.grid(row=0, column=3, sticky="nsew", padx=5)
 
 
 def hora():
@@ -314,27 +355,27 @@ miframe.columnconfigure(5, weight=1)
 
 #---------------------Areadetexto----------------------------------
 
-areadetexto=Text(miframe, width=50, bd=5, relief="groove", font=("IBM Plex Mono", 11), tabs=("1c"), fg="black", bg="white")
+areadetexto=Text(miframe, width=50, height=15, bd=5, relief="groove", font=("IBM Plex Mono", 11), tabs=("1c"), fg="black", bg="white")
 areadetexto.grid(row=1, column=1, columnspan=6, sticky="nsew")
 areadetexto.focus_force()
 
 #---------------------Botones inferiores----------------------------------
 
-botonguardar=Button(miframe, text="Guardar", width=7, height=2, command=guardar)
+botonguardar=ttk.Button(miframe, text="Guardar", width=7,command=guardar, style="TButton")
 botonguardar.grid(row=2, column=1, sticky="ew")
 
-botontipografia=Button(miframe, text="Tipografía", width=7, height=2, command=tipografia)
+botontipografia=ttk.Button(miframe, text="Tipografía", width=7,command=tipografia, style="TButton")
 botontipografia.grid(row=2, column=2, sticky="ew")
 
 #botoncalendario=Button(miframe, text="Calendario", width=7, height=2, command=calendario)
 #otoncalendario.grid(row=2, column=2, columnspan=2, sticky="ew")
 
-botoncancelar=Button(miframe, text="Cancelar", height=2, command=cancelar)
+botoncancelar=ttk.Button(miframe, text="Cancelar", width=7, command=cancelar, style="TButton")
 botoncancelar.grid(row=2, column=5, sticky="ew")
 
 #--------------------------------------------calframe--------------------
 
-verboton=Button(framecalendario, text="Ver", command=infodeldia)
+verboton=ttk.Button(framecalendario, text="Ver", command=infodeldia, style="TButton")
 verboton.grid(row=1, column=0, sticky="we")
     
 infotext1=Text(framecalendario,height=1, width=10, bd=5, relief="groove", font=("IBM Plex Mono", 11), tabs=("1c"), fg="black", bg="white", state="disabled")
@@ -346,7 +387,7 @@ infotext.grid(row=3, column=0, sticky="nswe")
 framecalendario.rowconfigure(0, weight=1)
 #framecalendario.rowconfigure(1, weight=1)
 framecalendario.rowconfigure(2, weight=1)
-framecalendario.rowconfigure(2, weight=1)
+framecalendario.rowconfigure(3, weight=1)
 framecalendario.columnconfigure(0, weight=1)
     
 #--------------------------------------------calframe--------------------
@@ -362,20 +403,21 @@ except:
 finally:
     configfile.close()
 
-eligathemelabel=Label(configframe, text="Estilo:")
-eligathemelabel.grid(row=0, column=0, sticky="we")
+eligathemelabel=ttk.Label(configframe, text="Estilo:", style="TLabel")
+eligathemelabel.grid(row=0, column=0, sticky="nsew")
 
 def cambiartheme():
     temaseleccionado=comboboxtheme.get()
     estilodelaapp.set_theme(temaseleccionado)
 
-listadethemes=["adapta", "aquativo", "arc", "black", "blue", "breeze", "clearlooks", 
+listadethemes=["adapta", "black", "blue", "clearlooks", 
                "elegance", "equilux", "itft1", "keramik", "kroc", "plastik", 
-               "radiance", "scidgrey", "scidmint", "scidpink", "smog", "ubuntu", "winxpblue", "yaru"]
-comboboxtheme=ttk.Combobox(configframe, value=listadethemes)
+               "scidgrey", "scidmint", "scidpink", "smog", "ubuntu", "winxpblue", "yaru"]
+comboboxtheme=ttk.Combobox(configframe, value=listadethemes, style="TCombobox")
 comboboxtheme.grid(row=0, column=1, sticky="we")
+comboboxtheme.set("adapta")
 
-aplicartemaboton=Button(configframe, text="aplicar", command=lambda: cambiartheme())
+aplicartemaboton=ttk.Button(configframe, text="aplicar", command=lambda: cambiartheme(), style="TButton")
 aplicartemaboton.grid(row=0, column=2, sticky="we")
 
 #configframe.columnconfigure(0, weight=1)
